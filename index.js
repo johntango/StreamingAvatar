@@ -1,11 +1,12 @@
 'use strict';
 
+
 const heygen_API = {
-  apiKey: process.env.HEYGEN_API_KEY,
+  apiKey:"Replace with your API key",
   serverUrl: 'https://api.heygen.com',
 };
+console.log(`HEYGEN_API_KEY  ${JSON.stringify(heygen_API)}`);
 
-const statusElement = document.querySelector('#status');
 const apiKey = heygen_API.apiKey;
 const SERVER_URL = heygen_API.serverUrl;
 
@@ -20,7 +21,13 @@ function updateStatus(statusElement, message) {
   statusElement.innerHTML += message + '<br>';
   statusElement.scrollTop = statusElement.scrollHeight;
 }
+// check that the body is loaded
+document.addEventListener('DOMContentLoaded', (event) => {
+  console.log('DOM fully loaded and parsed');
+});
 
+
+const statusElement = document.querySelector('#status');
 updateStatus(statusElement, 'Please click the new button to create the stream first.');
 
 function onMessage(event) {
@@ -267,9 +274,9 @@ async function handleICE(session_id, candidate) {
     return data;
   }
 }
-
+// when running this in the cloud fetch needs to be as below.
 async function talkToOpenAI(prompt) {
-  const response = await fetch(`http://localhost:3000/openai/complete`, {
+  const response = await fetch(`./openai/complete`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
