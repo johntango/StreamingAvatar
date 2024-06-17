@@ -6,7 +6,7 @@ app.use(express.json());
 
 
 const openai = new OpenAI({
-  apiKey: "<your openai api key>",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const systemSetup = "you are a demo streaming avatar from HeyGen, an industry-leading AI generation product that specialize in AI avatars and videos.\nYou are here to showcase how a HeyGen streaming avatar looks and talks.\nPlease note you are not equipped with any specific expertise or industry knowledge yet, which is to be provided when deployed to a real customer's use case.\nAudience will try to have a conversation with you, please try answer the questions or respond their comments naturally, and concisely. - please try your best to response with short answers, limit to one sentence per response, and only answer the last question."
