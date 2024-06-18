@@ -1,8 +1,8 @@
 'use strict';
 
-
+// ENTER YOUR API KEY HERE
 const heygen_API = {
-  apiKey:"Replace with your API key",
+  apiKey:"",
   serverUrl: 'https://api.heygen.com',
 };
 console.log(`HEYGEN_API_KEY  ${JSON.stringify(heygen_API)}`);
@@ -135,6 +135,7 @@ async function repeatHandler() {
   updateStatus(statusElement, 'Task sent successfully');
 }
 
+
 async function talkHandler() {
   if (!sessionInfo) {
     updateStatus(statusElement, 'Please create a connection first');
@@ -145,6 +146,8 @@ async function talkHandler() {
     alert('Please enter a prompt for the LLM');
     return;
   }
+
+
 
   updateStatus(statusElement, 'Talking to LLM... please wait');
 
@@ -161,6 +164,35 @@ async function talkHandler() {
   } catch (error) {
     console.error('Error talking to AI:', error);
     updateStatus(statusElement, 'Error talking to AI');
+  }
+}
+// fix the deprecated functions 
+async function speakHandler() {
+  console.log('Speak button clicked');
+  // Check if the browser supports getUserMedia
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      // Request microphone access
+      navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function(stream) {
+              const audioContext = new AudioContext();
+              const source = audioContext.createMediaStreamSource(stream);
+              const processor = audioContext.createScriptProcessor(1024, 1, 1);
+
+              source.connect(processor);
+              processor.connect(audioContext.destination);
+
+              processor.onaudioprocess = function(e) {
+                  // Access the sound buffer
+                  var buffer = e.inputBuffer.getChannelData(0);
+                  // You can process or send this buffer to server
+                  sendToServer(buffer);
+              };
+          })
+          .catch(function(err) {
+              console.error('Error accessing microphone:', err);
+          });
+  } else {
+      console.error('getUserMedia not supported in this browser.');
   }
 }
 
@@ -196,7 +228,7 @@ document.querySelector('#startBtn').addEventListener('click', startAndDisplaySes
 document.querySelector('#repeatBtn').addEventListener('click', repeatHandler);
 document.querySelector('#closeBtn').addEventListener('click', closeConnectionHandler);
 document.querySelector('#talkBtn').addEventListener('click', talkHandler);
-
+document.querySelector('#speakBtn').addEventListener('click', speakHandler);
 
 // new session
 async function newSession(quality, avatar_name, voice_id) {
