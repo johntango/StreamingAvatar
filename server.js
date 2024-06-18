@@ -2,6 +2,10 @@ const express = require('express');
 const OpenAI = require('openai')
 const path = require('path');
 const app = express();
+const multer = require('multer');
+const FormData = require('form-data');
+
+
 app.use(express.json());
 
 
@@ -29,6 +33,35 @@ app.post('/openai/complete', async (req, res) => {
     res.status(500).send('Error processing your request');
   }
 });
+// write ./whisper post 
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post('/whisper', upload.single('audio'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('file', req.file.buffer, req.file.originalname);
+
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Authorization':'Bearer ' + process.env.OPENAI_API_KEY,
+            }
+        });
+
+        const data = await response.json();
+        res.status(200).send(data);
+        console.log('Transcription:', data.transcription)
+    } catch (error) {
+        console.error('Failed to send audio to Whisper:', error);
+        res.status(500).send('Failed to process audio');
+    }
+});
+
 
 app.listen(3000, function () {
   console.log('App is listening on port 3000!');

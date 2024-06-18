@@ -2,7 +2,7 @@
 
 // ENTER YOUR API KEY HERE
 const heygen_API = {
-  apiKey:"",
+  apiKey:"YourApiKey",
   serverUrl: 'https://api.heygen.com',
 };
 console.log(`HEYGEN_API_KEY  ${JSON.stringify(heygen_API)}`);
@@ -167,34 +167,99 @@ async function talkHandler() {
   }
 }
 // fix the deprecated functions 
+let audioContext;
+let source;
+let processor;
+let stream;
 async function speakHandler() {
   console.log('Speak button clicked');
   // Check if the browser supports getUserMedia
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      // Request microphone access
-      navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(function(stream) {
-              const audioContext = new AudioContext();
-              const source = audioContext.createMediaStreamSource(stream);
-              const processor = audioContext.createScriptProcessor(1024, 1, 1);
 
-              source.connect(processor);
-              processor.connect(audioContext.destination);
+  try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
+        await audioContext.audioWorklet.addModule('audioProcessor.js'); // Load the audio worklet processor
+        source = audioContext.createMediaStreamSource(stream);
+        processor = new AudioWorkletNode(audioContext, 'audio-processor');
 
-              processor.onaudioprocess = function(e) {
-                  // Access the sound buffer
-                  var buffer = e.inputBuffer.getChannelData(0);
-                  // You can process or send this buffer to server
-                  sendToServer(buffer);
-              };
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+
+        processor.port.onmessage = (event) => {
+          const audioChunk = event.data;
+          // Convert float audio data to a suitable format (e.g., WAV) before sending
+          const audioBlob = floatToWav(audioChunk, audioContext.sampleRate);
+          sendAudioToServer(audioBlob,'whisper-small');
+      };
+      
+      function floatToWav(buffer, sampleRate) {
+        const bufferLength = buffer.length;
+        const wavBuffer = new ArrayBuffer(44 + bufferLength * 2);
+        const view = new DataView(wavBuffer);
+    
+        // Write the WAV container,
+        // Check out https://ccrma.stanford.edu/courses/422/projects/WaveFormat/ for more details on this format
+        // RIFF chunk descriptor
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + bufferLength * 2, true);
+        writeString(view, 8, 'WAVE');
+        // FMT sub-chunk
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true); // PCM chunk size
+        view.setUint16(20, 1, true); // Audio format 1 is PCM
+        view.setUint16(22, 1, true); // Number of channels
+        view.setUint32(24, sampleRate, true); // Sample rate
+        view.setUint32(28, sampleRate * 2, true); // Byte rate (Sample Rate * Block Align)
+        view.setUint16(32, 2, true); // Block align (NumChannels * BitsPerSample/8)
+        view.setUint16(34, 16, true); // Bits per sample
+        // Data sub-chunk
+        writeString(view, 36, 'data');
+        view.setUint32(40, bufferLength * 2, true);
+    
+        // Write the audio data
+        let offset = 44;
+        for (let i = 0; i < bufferLength; i++, offset += 2) {
+            const sample = Math.max(-1, Math.min(1, buffer[i])); // Clamp the values between -1 and 1
+            view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        }
+    
+        return new Blob([view], { type: 'audio/wav' });
+    }
+    
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+      
+      async function sendAudioToServer(audioBlob,model) {
+          const formData = new FormData();
+          formData.append('audio', audioBlob);
+          const response = await fetch('./whisper', {
+              method: 'POST',
+              body: formData
           })
-          .catch(function(err) {
-              console.error('Error accessing microphone:', err);
-          });
-  } else {
-      console.error('getUserMedia not supported in this browser.');
+          .then(response => response.json())
+          .then(data => console.log('Whisper response:', data))
+          .catch(error => console.error('Error sending audio:', error));
+      }
+    } catch (err) {
+        console.error('Error accessing microphone:', err);
+    }
+} 
+
+
+function stopRecording() {
+  if (audioContext) {
+      audioContext.close(); // Close the audio context
   }
+  if (stream) {
+      stream.getTracks().forEach(track => track.stop()); // Stop all tracks
+  }
+  console.log("Recording stopped.");
 }
+
+
 
 
 // when clicking the "Close" button, close the connection
@@ -229,6 +294,7 @@ document.querySelector('#repeatBtn').addEventListener('click', repeatHandler);
 document.querySelector('#closeBtn').addEventListener('click', closeConnectionHandler);
 document.querySelector('#talkBtn').addEventListener('click', talkHandler);
 document.querySelector('#speakBtn').addEventListener('click', speakHandler);
+document.querySelector('#stopBtn').addEventListener('click', stopRecording);
 
 // new session
 async function newSession(quality, avatar_name, voice_id) {
