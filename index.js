@@ -2,7 +2,7 @@
 
 // ENTER YOUR API KEY HERE
 const heygen_API = {
-  apiKey:"YourApiKey",
+  apiKey:"",
   serverUrl: 'https://api.heygen.com',
 };
 console.log(`HEYGEN_API_KEY  ${JSON.stringify(heygen_API)}`);
@@ -189,7 +189,7 @@ async function speakHandler() {
           const audioChunk = event.data;
           // Convert float audio data to a suitable format (e.g., WAV) before sending
           const audioBlob = floatToWav(audioChunk, audioContext.sampleRate);
-          sendAudioToServer(audioBlob,'whisper-small');
+          sendAudioToServer(audioBlob);
       };
       
       function floatToWav(buffer, sampleRate) {
@@ -232,16 +232,23 @@ async function speakHandler() {
         }
     }
       
-      async function sendAudioToServer(audioBlob,model) {
+      async function sendAudioToServer(audioBlob) {
           const formData = new FormData();
           formData.append('audio', audioBlob);
           const response = await fetch('./whisper', {
               method: 'POST',
               body: formData
           })
-          .then(response => response.json())
-          .then(data => console.log('Whisper response:', data))
-          .catch(error => console.error('Error sending audio:', error));
+          const prompt = await response.text();
+          const text = await talkToOpenAI(prompt)
+          if (text) {
+            // Send the AI's response to Heygen's streaming.task API
+            const resp = await repeat(sessionInfo.session_id, text);
+            updateStatus(statusElement, 'LLM response sent successfully');
+          } else {
+            updateStatus(statusElement, 'Failed to get a response from AI');
+          }
+          
       }
     } catch (err) {
         console.error('Error accessing microphone:', err);

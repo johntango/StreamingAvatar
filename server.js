@@ -4,7 +4,9 @@ const path = require('path');
 const app = express();
 const multer = require('multer');
 const FormData = require('form-data');
-
+const fs = require('fs');
+const {Readable} = require('stream');
+const {toFile} = require("openai/uploads");
 
 app.use(express.json());
 
@@ -39,23 +41,23 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.post('/whisper', upload.single('audio'), async (req, res) => {
     if (!req.file) {
         return res.status(400).send('No file uploaded.');
-    }
-
+    };
     try {
         const formData = new FormData();
         formData.append('file', req.file.buffer, req.file.originalname);
-
-        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Authorization':'Bearer ' + process.env.OPENAI_API_KEY,
-            }
+        //fs.writeFileSync('test.wav', req.file.buffer);
+        
+        const name = "test.wav";
+        const convertedFile = await toFile(Readable.from(req.file.buffer), name);
+        const transciption = await openai.audio.translations.create({
+            //file: fs.createReadStream('test.wav'),
+            file: convertedFile,
+            model: 'whisper-1',
         });
-
-        const data = await response.json();
+        const data = transciption.text;
+        console.log('Transcription:', data)
         res.status(200).send(data);
-        console.log('Transcription:', data.transcription)
+        
     } catch (error) {
         console.error('Failed to send audio to Whisper:', error);
         res.status(500).send('Failed to process audio');
