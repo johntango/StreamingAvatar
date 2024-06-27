@@ -43,6 +43,8 @@ app.get('/newChat', async (req, res) => {
 
 app.post('/openai/completeJohn', async (req, res) => {
   let prompt = req.body.prompt;
+  focus.assistant_id = "asst_118CkWzCFTyBBJuGTLNNwMBN"; // special agent 
+  focus.thread_id = "thread_6EMtcpisFJyvkLeqk7tdNsOJ";
   let response = await runAssistant(prompt);
   res.json({ text: response.content });
   

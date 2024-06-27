@@ -302,7 +302,7 @@ document.querySelector('#closeBtn').addEventListener('click', closeConnectionHan
 document.querySelector('#talkBtn').addEventListener('click', talkHandler);
 document.querySelector('#speakBtn').addEventListener('click', speakHandler);
 document.querySelector('#stopBtn').addEventListener('click', stopRecording);
-document.querySelector('#newChat').addEventListener('click', newChatHandler);
+document.querySelector('#newChatBtn').addEventListener('click', newChatHandler);
 
 // new chat handler
 async function newChatHandler() {
