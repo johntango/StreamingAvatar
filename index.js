@@ -302,7 +302,28 @@ document.querySelector('#closeBtn').addEventListener('click', closeConnectionHan
 document.querySelector('#talkBtn').addEventListener('click', talkHandler);
 document.querySelector('#speakBtn').addEventListener('click', speakHandler);
 document.querySelector('#stopBtn').addEventListener('click', stopRecording);
+document.querySelector('#newChat').addEventListener('click', newChatHandler);
 
+// new chat handler
+async function newChatHandler() {
+  const response = await fetch(`./newChat`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  if (response.status === 500) {
+    console.error('Server error');
+    updateStatus(
+      statusElement,
+      'Server Error. Please ask the staff if the service has been turned on',
+    );
+    throw new Error('Server error');
+  } else {
+    const data = await response.json();
+    return data.data;
+  }
+}
 // new session
 async function newSession(quality, avatar_name, voice_id) {
   const response = await fetch(`${SERVER_URL}/v1/streaming.new`, {

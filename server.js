@@ -35,6 +35,93 @@ app.post('/openai/complete', async (req, res) => {
     res.status(500).send('Error processing your request');
   }
 });
+
+app.get('/newChat', async (req, res) => {
+  switchThread();
+  res.status(200).send("New chat created");
+});
+
+app.post('/openai/completeJohn', async (req, res) => {
+  let prompt = req.body.prompt;
+  let response = await runAssistant(prompt);
+  res.json({ text: response.content });
+  
+})
+function switchThread() {
+  if (focus.thread_id =="") {
+      // create a new thread
+      let thread = openai.beta.threads.create();
+      focus.thread_id = thread.id;
+  }
+  return
+}
+
+
+//
+// this puts a message onto a thread and then runs the assistant 
+async function runAssistant(prompt) {
+  try {
+      thread_id = focus.thread_id;
+      await openai.beta.threads.messages.create(thread_id,
+          {
+              role: "user",
+              content: prompt,
+          })
+      let run = await openai.beta.threads.runs.create(thread_id, {
+          assistant_id: focus.assistant_id
+      })
+      let run_id = run.id;
+      focus.run_id = run_id;
+      await get_run_status(thread_id, run_id); // blocks until run is completed
+      // now retrieve the messages
+      let response = await openai.beta.threads.messages.list(thread_id)
+      return get_all_messages(response);
+
+  }
+  catch (error) {
+      console.log(error);
+      return error;
+  }
+}
+function get_all_messages(response) {
+  let all_messages = [];
+  let role = "";
+  let content = "";
+  for (let message of response.data) {
+      // pick out role and content
+      role = message.role;
+      content = message.content[0].text.value;
+      all_messages.push({ role, content });
+  }
+  // return last message pushed onto stack
+  return all_messages[0]
+}
+async function get_run_status(thread_id, run_id) {
+  try {
+      let response = await openai.beta.threads.runs.retrieve(thread_id, run_id)
+      let message = response;
+      focus.status = response.status;
+      let tries = 0;
+      while (response.status == 'in_progress'||response.static == "queued" && tries < 10) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
+          response = await openai.beta.threads.runs.retrieve(thread_id, run_id);
+          tries += 1;
+      }
+      if (response.status === "requires_action") {
+          get_and_run_tool(response);
+      }
+
+      if (response.status == "completed" || response.status == "failed") {
+
+      }
+      // await openai.beta.threads.del(thread_id)
+      return
+  }
+  catch (error) {
+      console.log(error);
+      return error;
+  }
+}
 // write ./whisper post 
 const upload = multer({ storage: multer.memoryStorage() });
 
