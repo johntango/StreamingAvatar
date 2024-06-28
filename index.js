@@ -319,10 +319,12 @@ async function newChatHandler() {
       'Server Error. Please ask the staff if the service has been turned on',
     );
     throw new Error('Server error');
-  } else {
-    const data = await response.json();
-    return data.data;
+  } else if (response.status === 200){
+    let data = await response.json()
+    updateStatus(statusElement, `New chat created ${JSON.stringify(data)}`);
+   
   }
+  return response;
 }
 // new session
 async function newSession(quality, avatar_name, voice_id) {
@@ -402,7 +404,7 @@ async function handleICE(session_id, candidate) {
 }
 // when running this in the cloud fetch needs to be as below.
 async function talkToOpenAI(prompt) {
-  const response = await fetch(`./openai/complete`, {
+  const response = await fetch(`./openai/completeJohn`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

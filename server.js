@@ -10,6 +10,8 @@ const {toFile} = require("openai/uploads");
 
 app.use(express.json());
 
+let focus = { assistant_id: "", assistant_name: "", file_id: "", thread_id: "", message: "", func_name: "", run_id: "", status: "" };
+
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -37,25 +39,30 @@ app.post('/openai/complete', async (req, res) => {
 });
 
 app.get('/newChat', async (req, res) => {
-  switchThread();
-  res.status(200).send("New chat created");
+  let response = await switchThread();
+  res.status(200).json(response);
 });
 
 app.post('/openai/completeJohn', async (req, res) => {
   let prompt = req.body.prompt;
+  if(focus.thread_id == ""){
+    await switchThread();
+  }
   focus.assistant_id = "asst_118CkWzCFTyBBJuGTLNNwMBN"; // special agent 
-  focus.thread_id = "thread_6EMtcpisFJyvkLeqk7tdNsOJ";
-  let response = await runAssistant(prompt);
-  res.json({ text: response.content });
-  
+  let message = await runAssistant(prompt);
+  console.log(message);
+  res.json({ text: message });
 })
-function switchThread() {
+
+async function switchThread() {
   if (focus.thread_id =="") {
+    focus.thread_id = "thread_IJtntsN037DFYZ4jKm2rWL7l";
+  }else {
       // create a new thread
-      let thread = openai.beta.threads.create();
+      let thread = await openai.beta.threads.create();
       focus.thread_id = thread.id;
   }
-  return
+  return {text:focus.thread_id};
 }
 
 
@@ -63,7 +70,7 @@ function switchThread() {
 // this puts a message onto a thread and then runs the assistant 
 async function runAssistant(prompt) {
   try {
-      thread_id = focus.thread_id;
+      let thread_id = focus.thread_id;
       await openai.beta.threads.messages.create(thread_id,
           {
               role: "user",
@@ -75,9 +82,12 @@ async function runAssistant(prompt) {
       let run_id = run.id;
       focus.run_id = run_id;
       await get_run_status(thread_id, run_id); // blocks until run is completed
+   
       // now retrieve the messages
       let response = await openai.beta.threads.messages.list(thread_id)
-      return get_all_messages(response);
+
+      let message = get_last_response(response.data);
+      return message;
 
   }
   catch (error) {
@@ -85,18 +95,13 @@ async function runAssistant(prompt) {
       return error;
   }
 }
-function get_all_messages(response) {
-  let all_messages = [];
-  let role = "";
-  let content = "";
-  for (let message of response.data) {
-      // pick out role and content
-      role = message.role;
-      content = message.content[0].text.value;
-      all_messages.push({ role, content });
+function get_last_response(data) {
+  let last_message = data[0].content[0].text.value;
+  if (last_message) {
+      return last_message;
   }
   // return last message pushed onto stack
-  return all_messages[0]
+  return "No response from assistant";
 }
 async function get_run_status(thread_id, run_id) {
   try {
@@ -116,6 +121,7 @@ async function get_run_status(thread_id, run_id) {
       if (response.status == "completed" || response.status == "failed") {
 
       }
+      
       // await openai.beta.threads.del(thread_id)
       return
   }
