@@ -1,3 +1,15 @@
+# Testing Special Agent with VectorDB knowledge base. Using OpenAI Assistant
+
+### Generate Assistant in OpenAI Playground and Also Drag and Drop files to create VectorDB (10,000 files allowed)
+
+### Assistant has Vector DB attached. No Need to attach to Thread
+
+### New Threads can be generated for Assistant and they will access VectorDB
+
+### Test by asking LLM "What is your source". It will respond - "Your files"
+
+### This all works with streaming Avatar
+
 # Streaming Avatar Demo
 
 NEW: We have an SDK now! The SDK is an NPM package that you can easily add to your website and use for Streaming Avatar functionality. Please check it out at https://www.npmjs.com/package/@heygen/streaming-avatar
@@ -47,7 +59,9 @@ You can check how many active sessions you have open with the List Sessions endp
    ```
    "apiKey": "YourApiKey";
    ```
+
 3. (optional) Open the `server.js` file and set your OpenAI API key to use talk mode:
+
    ```
    const openai = new OpenAI({
      apiKey: "<your openai api key>",
