@@ -10,7 +10,7 @@ const {toFile} = require("openai/uploads");
 
 app.use(express.json());
 
-let focus = { assistant_id: "", assistant_name: "", file_id: "", thread_id: "", message: "", func_name: "", run_id: "", status: "" };
+let focus = { assistant_id: "", assistant_name: "", file_id: "", thread_id: "", message: "", func_name: "", run_id: "", status: "" , vector_store_id: ""};
 
 
 const openai = new OpenAI({
@@ -48,7 +48,7 @@ app.post('/openai/completeJohn', async (req, res) => {
   if(focus.thread_id == ""){
     await switchThread();
   }
-  focus.assistant_id = "asst_118CkWzCFTyBBJuGTLNNwMBN"; // special agent 
+  focus.assistant_id = "asst_u3alzLMcKCDlUmPg7BZxqCHu"; // special CrewAI Test
   let message = await runAssistant(prompt);
   console.log(message);
   res.json({ text: message });
@@ -56,15 +56,32 @@ app.post('/openai/completeJohn', async (req, res) => {
 
 async function switchThread() {
   if (focus.thread_id =="") {
-    focus.thread_id = "thread_IJtntsN037DFYZ4jKm2rWL7l";
+    focus.thread_id = "thread_Y8Kg4AIFoyZj812nlE6dXg1I";
   }else {
       // create a new thread
       let thread = await openai.beta.threads.create();
       focus.thread_id = thread.id;
+      // add vector store to thread
+      focus.vector_store_id = "vs_2IALcdUrUzzG8gMCXUdSHLqh";
+      //await modify_thread_with_vector_store(focus.thread_id, focus.vector_store_id);
   }
   return {text:focus.thread_id};
 }
-
+async function modify_thread_with_vector_store(thread_id, vector_store_id){
+    //Update the thread with new metadata and vector store ID
+    let response = await openai.beta.threads.update(
+        thread_id,
+        metadata={
+            "i_attached_a_vector_store": "true",
+        },
+        tool_resources={
+            "file_search": {
+                "vector_store_ids": [vector_store_id]
+            }
+        }
+    )
+    return response;
+}
 
 //
 // this puts a message onto a thread and then runs the assistant 
@@ -76,54 +93,19 @@ async function runAssistant(prompt) {
               role: "user",
               content: prompt,
           })
-      let run = await openai.beta.threads.runs.create(thread_id, {
+      // run and poll thread V2 API feature
+      let run = await openai.beta.threads.runs.createAndPoll(thread_id, {
           assistant_id: focus.assistant_id
       })
       let run_id = run.id;
       focus.run_id = run_id;
-      await get_run_status(thread_id, run_id); // blocks until run is completed
    
       // now retrieve the messages
-      let response = await openai.beta.threads.messages.list(thread_id)
+      let messages = await openai.beta.threads.messages.list(thread_id);
+      messages = messages.data;
+      let message_content = messages[0].content[0].text.value
+      return message_content;
 
-      let message = get_last_response(response.data);
-      return message;
-
-  }
-  catch (error) {
-      console.log(error);
-      return error;
-  }
-}
-function get_last_response(data) {
-  let last_message = data[0].content[0].text.value;
-  if (last_message) {
-      return last_message;
-  }
-  // return last message pushed onto stack
-  return "No response from assistant";
-}
-async function get_run_status(thread_id, run_id) {
-  try {
-      let response = await openai.beta.threads.runs.retrieve(thread_id, run_id)
-      let message = response;
-      focus.status = response.status;
-      let tries = 0;
-      while (response.status == 'in_progress'||response.static == "queued" && tries < 10) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 1 second
-          response = await openai.beta.threads.runs.retrieve(thread_id, run_id);
-          tries += 1;
-      }
-      if (response.status === "requires_action") {
-          get_and_run_tool(response);
-      }
-
-      if (response.status == "completed" || response.status == "failed") {
-
-      }
-      
-      // await openai.beta.threads.del(thread_id)
-      return
   }
   catch (error) {
       console.log(error);
