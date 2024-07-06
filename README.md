@@ -2,7 +2,7 @@
 
 ### Generate Assistant in OpenAI Playground and Also Drag and Drop files to create VectorDB (10,000 files allowed)
 
-### Assistant has Vector DB attached. No Need to attach to Thread
+### Assistant has Vector DB attached. (There are test documents in directory "testdata" that can answer a question "What is CrewAI". Add them to your agent in the OpenAI Playground )
 
 ### New Threads can be generated for Assistant and they will access VectorDB
 
