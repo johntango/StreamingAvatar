@@ -315,10 +315,10 @@ document.querySelector('#newBtn').addEventListener('click', createNewSession);
 document.querySelector('#startBtn').addEventListener('click', startAndDisplaySession);
 document.querySelector('#repeatBtn').addEventListener('click', repeatHandler);
 document.querySelector('#closeBtn').addEventListener('click', closeConnectionHandler);
-document.querySelector('#talkBtn').addEventListener('click', talkHandler);
+document.querySelector('#talkChatBtn').addEventListener('click', talkChatHandler);
 document.querySelector('#talkAgentBtn').addEventListener('click', talkAgentHandler);
-document.querySelector('#speakBtn').addEventListener('click', speakHandler);
-document.querySelector('#stopBtn').addEventListener('click', stopRecording);
+//document.querySelector('#speakBtn').addEventListener('click', speakHandler);
+//document.querySelector('#stopBtn').addEventListener('click', stopRecording);
 document.querySelector('#newChatBtn').addEventListener('click', newChatHandler);
 
 // new chat handler
