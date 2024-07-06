@@ -21,7 +21,8 @@ const systemSetup = "you are a demo streaming avatar from HeyGen, an industry-le
 
 app.use(express.static(path.join(__dirname, '.')));
 
-app.post('/openai/complete', async (req, res) => {
+// This will call OpenAI chat completion endpoint with the prompt provided in the request body
+app.post('/openai/chat', async (req, res) => {
   try {
     const prompt = req.body.prompt;
     const chatCompletion = await openai.chat.completions.create({
@@ -43,11 +44,12 @@ app.get('/newChat', async (req, res) => {
   res.status(200).json(response);
 });
 
-app.post('/openai/completeJohn', async (req, res) => {
+app.post('/openai/agent', async (req, res) => {
   let prompt = req.body.prompt;
   if(focus.thread_id == ""){
     await switchThread();
   }
+  // Place your own assistant ID here to test
   focus.assistant_id = "asst_u3alzLMcKCDlUmPg7BZxqCHu"; // special CrewAI Test
   let message = await runAssistant(prompt);
   console.log(message);

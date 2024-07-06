@@ -2,7 +2,7 @@
 
 // ENTER YOUR API KEY HERE
 const heygen_API = {
-  apiKey:"",
+  apiKey:"YjFmNWRkZDg0OTJkNDkzYzg2YWUyYTQyMmNlMmRlNWUtMTcxODQ2NTk1Mg==",
   serverUrl: 'https://api.heygen.com',
 };
 console.log(`HEYGEN_API_KEY  ${JSON.stringify(heygen_API)}`);
@@ -135,8 +135,8 @@ async function repeatHandler() {
   updateStatus(statusElement, 'Task sent successfully');
 }
 
-
-async function talkHandler() {
+// this is fired by button click
+async function talkChatHandler() {
   if (!sessionInfo) {
     updateStatus(statusElement, 'Please create a connection first');
     return;
@@ -146,13 +146,28 @@ async function talkHandler() {
     alert('Please enter a prompt for the LLM');
     return;
   }
+  updateStatus(statusElement, 'Talking to Chat LLM... please wait');
+  await chooseModelToAnswer(prompt, 'chat')
+}
+// this is fired by button click
+async function talkAgentHandler() {
+  if (!sessionInfo) {
+    updateStatus(statusElement, 'Please create a connection first');
+    return;
+  }
+  const prompt = taskInput.value; // Using the same input for simplicity
+  if (prompt.trim() === '') {
+    alert('Please enter a prompt for the LLM');
+    return;
+  }
+  updateStatus(statusElement, 'Talking to Agent LLM... please wait');
+  await chooseModelToAnswer(prompt, 'agent')
+}
 
-
-
-  updateStatus(statusElement, 'Talking to LLM... please wait');
+async function chooseModelToAnswer(prompt, model) {
 
   try {
-    const text = await talkToOpenAI(prompt)
+    const text = await talkToOpenAI(prompt,model)
 
     if (text) {
       // Send the AI's response to Heygen's streaming.task API
@@ -171,6 +186,7 @@ let audioContext;
 let source;
 let processor;
 let stream;
+// This is presently uses call to OpenAI WHisper API and is very slow.
 async function speakHandler() {
   console.log('Speak button clicked');
   // Check if the browser supports getUserMedia
@@ -300,6 +316,7 @@ document.querySelector('#startBtn').addEventListener('click', startAndDisplaySes
 document.querySelector('#repeatBtn').addEventListener('click', repeatHandler);
 document.querySelector('#closeBtn').addEventListener('click', closeConnectionHandler);
 document.querySelector('#talkBtn').addEventListener('click', talkHandler);
+document.querySelector('#talkAgentBtn').addEventListener('click', talkAgentHandler);
 document.querySelector('#speakBtn').addEventListener('click', speakHandler);
 document.querySelector('#stopBtn').addEventListener('click', stopRecording);
 document.querySelector('#newChatBtn').addEventListener('click', newChatHandler);
@@ -403,8 +420,9 @@ async function handleICE(session_id, candidate) {
   }
 }
 // when running this in the cloud fetch needs to be as below.
-async function talkToOpenAI(prompt) {
-  const response = await fetch(`./openai/completeJohn`, {
+// model should be "chat" or "agent"
+async function talkToOpenAI(prompt,model) {
+  const response = await fetch(`./openai/${model}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
