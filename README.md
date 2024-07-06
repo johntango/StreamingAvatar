@@ -4,6 +4,8 @@
 
 ### Assistant has Vector DB attached. (There are test documents in directory "testdata" that can answer a question "What is CrewAI". Add them to your agent in the OpenAI Playground )
 
+See Video https://drive.google.com/file/d/1i3JI3gijyGKwAzP011ANOzgGRj90fj2g/view?usp=sharing
+
 ### New Threads can be generated for Assistant and they will access VectorDB
 
 ### Test by asking LLM "What is your source". It will respond - "Your files"
