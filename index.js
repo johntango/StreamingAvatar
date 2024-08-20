@@ -1,7 +1,9 @@
 'use strict';
 
+let HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+
 const heygen_API = {
-  apiKey: 'YourApiKey',
+  apiKey: HEYGEN_API_KEY,
   serverUrl: 'https://api.heygen.com',
 };
 
